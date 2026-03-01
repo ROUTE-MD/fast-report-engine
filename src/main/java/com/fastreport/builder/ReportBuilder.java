@@ -4,6 +4,7 @@ import com.fastreport.model.ReportDefinition;
 import com.fastreport.model.ReportOrientation;
 import com.fastreport.model.ReportTheme;
 import com.fastreport.model.section.ReportSection;
+import com.fastreport.model.section.SeparatorLine;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -82,6 +83,24 @@ public class ReportBuilder {
 
     public ListSectionBuilder listSection() {
         return new ListSectionBuilder(this);
+    }
+
+    /** Adds a separator line with default style. */
+    public ReportBuilder separator() {
+        this.sections.add(SeparatorLine.builder().build());
+        return this;
+    }
+
+    /** Adds a separator line with custom color. */
+    public ReportBuilder separator(java.awt.Color color) {
+        this.sections.add(SeparatorLine.builder().color(color).build());
+        return this;
+    }
+
+    /** Adds a separator line with custom color and thickness. */
+    public ReportBuilder separator(java.awt.Color color, float thickness) {
+        this.sections.add(SeparatorLine.builder().color(color).thickness(thickness).build());
+        return this;
     }
 
     ReportBuilder addSection(ReportSection section) {

@@ -4,6 +4,8 @@ import com.fastreport.model.ReportDefinition;
 import com.fastreport.model.section.*;
 import com.fastreport.model.style.FontStyle;
 import com.fastreport.renderer.ReportRenderer;
+import org.dhatim.fastexcel.BorderSide;
+import org.dhatim.fastexcel.BorderStyle;
 import org.dhatim.fastexcel.Workbook;
 
 import java.io.IOException;
@@ -52,6 +54,12 @@ public class XlsxRenderer implements ReportRenderer {
                         case FullWidthRow fwr -> fullWidthRenderer.render(fwr, ctx);
                         case DetailSection ds -> detailRenderer.render(ds, ctx);
                         case ListSection ls -> listRenderer.render(ls, ctx);
+                        case SeparatorLine sl -> {
+                            int row = ctx.nextRow();
+                            String hex = sl.color() != null ? colorHex(sl.color()) : "3498DB";
+                            ws.style(row, 0).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
+                                    .borderColor(BorderSide.BOTTOM, hex).set();
+                        }
                     }
                 }
             }

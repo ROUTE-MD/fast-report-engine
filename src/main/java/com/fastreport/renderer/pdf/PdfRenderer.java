@@ -81,6 +81,7 @@ public class PdfRenderer implements ReportRenderer {
                         case FullWidthRow fwr -> fullWidthRenderer.render(fwr, ctx);
                         case DetailSection ds -> detailRenderer.render(ds, ctx);
                         case ListSection ls -> listRenderer.render(ls, ctx);
+                        case SeparatorLine sl -> renderSeparator(sl, ctx);
                     }
                 }
             }
@@ -88,5 +89,17 @@ public class PdfRenderer implements ReportRenderer {
             ctx.closeFinal();
             doc.save(out);
         }
+    }
+
+    private void renderSeparator(SeparatorLine sl, PdfPageContext ctx) throws IOException {
+        ctx.moveY(-sl.marginTop());
+        ctx.ensureSpace(sl.thickness() + sl.marginBottom());
+        java.awt.Color color = sl.color() != null ? sl.color() : SEPARATOR_COLOR;
+        ctx.stream().setStrokingColor(color);
+        ctx.stream().setLineWidth(sl.thickness());
+        ctx.stream().moveTo(ctx.margin(), ctx.y());
+        ctx.stream().lineTo(ctx.margin() + ctx.usableWidth(), ctx.y());
+        ctx.stream().stroke();
+        ctx.moveY(-sl.marginBottom());
     }
 }
