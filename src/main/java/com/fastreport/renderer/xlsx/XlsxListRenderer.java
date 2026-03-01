@@ -26,19 +26,29 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
         String curr = ctx.theme().currencySymbol();
         String datePat = ctx.theme().datePattern();
 
-        // Section title
+        // Section title — merged across all columns
         if (section.sectionTitle() != null) {
             int row = ctx.nextRow();
             ws.value(row, 0, section.sectionTitle());
+            ctx.mergeRow(row);
             ws.style(row, 0).bold().fontSize(11)
                     .fontColor(colorHex(ctx.theme().subtitleStyle().color())).set();
         }
 
-        // Column widths
+        // Column widths — factor in widthWeight for proportional sizing
+        float totalWeight = 0f;
+        for (ColumnDef col : allCols) totalWeight += col.widthWeight();
+        int baseWidth = 14;
         for (int c = 0; c < allCols.size(); c++) {
             ColumnDef col = allCols.get(c);
-            int w = col.excelWidth() > 0 ? col.excelWidth()
-                    : XlsxFormatUtil.estimateWidth(col.type(), col.label());
+            int w;
+            if (col.excelWidth() > 0) {
+                w = col.excelWidth();
+            } else {
+                int estimated = XlsxFormatUtil.estimateWidth(col.type(), col.label());
+                int weighted = (int) (baseWidth * (col.widthWeight() / totalWeight) * allCols.size());
+                w = Math.max(estimated, weighted);
+            }
             ws.width(c, w);
         }
 

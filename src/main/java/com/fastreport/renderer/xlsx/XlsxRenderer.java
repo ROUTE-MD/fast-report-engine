@@ -21,11 +21,21 @@ public class XlsxRenderer implements ReportRenderer {
 
     @Override
     public void render(ReportDefinition report, OutputStream out) throws IOException {
+        // Pre-compute max column count from all ListSections
+        int colCount = 4; // minimum default
+        if (report.getSections() != null) {
+            for (ReportSection s : report.getSections()) {
+                if (s instanceof ListSection ls && ls.columns().size() > colCount) {
+                    colCount = ls.columns().size();
+                }
+            }
+        }
+
         try (var wb = new Workbook(out, "FastReportEngine", "1.0")) {
             var ws = wb.newWorksheet("Report");
-            var ctx = new XlsxRowContext(ws, report.getTheme());
+            var ctx = new XlsxRowContext(ws, report.getTheme(), colCount);
 
-            // Title
+            // Title — merged across all columns
             int titleRow = ctx.nextRow();
             ws.value(titleRow, 0, report.getTitle());
             FontStyle titleFs = report.getTheme().titleStyle();
@@ -35,6 +45,7 @@ public class XlsxRenderer implements ReportRenderer {
                 case CENTER -> "center";
                 case RIGHT -> "right";
             };
+            ctx.mergeRow(titleRow);
             ws.style(titleRow, 0).bold().fontSize((int) titleFs.fontSize())
                     .fontColor(colorHex(titleFs.color())).horizontalAlignment(xlsxAlign).set();
 
@@ -48,8 +59,10 @@ public class XlsxRenderer implements ReportRenderer {
                         case SeparatorLine sl -> {
                             int row = ctx.nextRow();
                             String hex = sl.color() != null ? colorHex(sl.color()) : "3498DB";
-                            ws.style(row, 0).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
-                                    .borderColor(BorderSide.BOTTOM, hex).set();
+                            for (int c = 0; c < colCount; c++) {
+                                ws.style(row, c).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
+                                        .borderColor(BorderSide.BOTTOM, hex).set();
+                            }
                         }
                         case SpacerSection sp -> {
                             for (int i = 0; i < sp.lines(); i++) ctx.nextRow();
@@ -62,6 +75,9 @@ public class XlsxRenderer implements ReportRenderer {
                                 ws.style(row, 0).bold().fontSize((int) labelFs.fontSize())
                                         .fontColor(colorHex(labelFs.color())).set();
                                 ws.value(row, 1, entry.getValue());
+                                if (colCount > 2) {
+                                    ws.range(row, 1, row, colCount - 1).merge();
+                                }
                                 ws.style(row, 1).fontSize((int) labelFs.fontSize())
                                         .fontColor(colorHex(report.getTheme().metadataValueStyle().color())).set();
                             }

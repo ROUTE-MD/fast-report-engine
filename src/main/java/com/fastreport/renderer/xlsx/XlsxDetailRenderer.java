@@ -16,10 +16,11 @@ public class XlsxDetailRenderer implements XlsxSectionRenderer<DetailSection> {
     public void render(DetailSection section, XlsxRowContext ctx) throws IOException {
         var ws = ctx.worksheet();
 
-        // Section title
+        // Section title — merged across all columns
         if (section.sectionTitle() != null) {
             int row = ctx.nextRow();
             ws.value(row, 0, section.sectionTitle());
+            ctx.mergeRow(row);
             FontStyle fs = ctx.theme().subtitleStyle();
             ws.style(row, 0).bold().fontSize((int) fs.fontSize())
                     .fontColor(colorHex(fs.color())).set();
