@@ -35,9 +35,13 @@ public final class TextWrapper {
         for (String word : words) {
             float wordWidth = font.getStringWidth(word) / 1000f * fontSize;
 
-            // Force-break a single word that exceeds max width
-            if (wordWidth > maxWidth && current.isEmpty()) {
-                lines.add(forceBreak(word, maxWidth, font, fontSize));
+            // Word itself exceeds max width — force-break it into multiple lines
+            if (wordWidth > maxWidth) {
+                if (!current.isEmpty()) {
+                    lines.add(current.toString());
+                    current = new StringBuilder();
+                }
+                forceBreakAll(word, maxWidth, font, fontSize, lines);
                 continue;
             }
 
@@ -61,14 +65,33 @@ public final class TextWrapper {
         return lines.isEmpty() ? List.of("") : lines;
     }
 
-    private static String forceBreak(String word, float maxWidth, PDFont font, float fontSize) throws IOException {
-        // Return as much as fits; caller will get the remainder on next iteration
-        for (int i = word.length() - 1; i > 0; i--) {
-            String sub = word.substring(0, i);
-            if (font.getStringWidth(sub) / 1000f * fontSize <= maxWidth) {
-                return sub;
+    /** Breaks a long word into as many lines as needed, adding all to the list. */
+    private static void forceBreakAll(String word, float maxWidth, PDFont font,
+                                      float fontSize, List<String> lines) throws IOException {
+        String remaining = word;
+        while (!remaining.isEmpty()) {
+            float rw = font.getStringWidth(remaining) / 1000f * fontSize;
+            if (rw <= maxWidth) {
+                lines.add(remaining);
+                break;
+            }
+            int cutAt = findCut(remaining, maxWidth, font, fontSize);
+            lines.add(remaining.substring(0, cutAt));
+            remaining = remaining.substring(cutAt);
+        }
+    }
+
+    /** Binary-searches for the longest prefix that fits within maxWidth. */
+    private static int findCut(String text, float maxWidth, PDFont font, float fontSize) throws IOException {
+        int lo = 1, hi = text.length();
+        while (lo < hi) {
+            int mid = (lo + hi + 1) / 2;
+            if (font.getStringWidth(text.substring(0, mid)) / 1000f * fontSize <= maxWidth) {
+                lo = mid;
+            } else {
+                hi = mid - 1;
             }
         }
-        return word.substring(0, 1);
+        return lo;
     }
 }
