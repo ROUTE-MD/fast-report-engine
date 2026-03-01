@@ -8,6 +8,7 @@ import com.fastreport.model.section.ListSection;
 import com.fastreport.model.style.Alignment;
 import com.fastreport.model.style.FontStyle;
 import com.fastreport.model.style.TableStyle;
+import com.fastreport.model.style.VerticalAlignment;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.awt.Color;
@@ -107,7 +108,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                 ctx.stream().fill();
             }
 
-            // Draw each cell (possibly multi-line)
+            // Draw each cell (possibly multi-line) with vertical alignment
             float cellX = ctx.margin();
             for (int c = 0; c < mainCols.size(); c++) {
                 ColumnDef col = mainCols.get(c);
@@ -117,18 +118,21 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
                 RowLayoutCalculator.CellLayout cell = rowLayout.cells().get(c);
                 List<String> lines = cell.lines();
+                int lineCount = lines.size();
+                float contentHeight = lineCount * lineHeight;
 
-                if (lines.size() == 1) {
-                    // Single line — use truncation for noWrap columns
-                    float textY = y - mainRowHeight + paddingV + 1f;
-                    String text = col.wrapText() ? lines.getFirst() :
-                            FormatUtil.format(val, col, curr, datePat);
+                // Compute vertical offset based on alignment
+                VerticalAlignment vAlign = col.effectiveVerticalAlignment();
+                float startY;
+                if (lineCount == 1 && !col.wrapText()) {
+                    // noWrap single line — truncate
+                    String text = FormatUtil.format(val, col, curr, datePat);
+                    float textY = vAlignOffset(y, mainRowHeight, fontSize, 1, lineHeight, paddingV, vAlign);
                     PdfTextHelper.drawText(ctx.stream(), text, dataFont, fontSize,
                             cellX, textY, colWidths[c], paddingH, col.effectiveAlignment(), color);
                 } else {
-                    // Multi-line wrapped text
-                    float startY = y - paddingV - fontSize;
-                    for (int ln = 0; ln < lines.size(); ln++) {
+                    startY = vAlignOffset(y, mainRowHeight, fontSize, lineCount, lineHeight, paddingV, vAlign);
+                    for (int ln = 0; ln < lineCount; ln++) {
                         float lineY = startY - ln * lineHeight;
                         PdfTextHelper.drawText(ctx.stream(), lines.get(ln), dataFont, fontSize,
                                 cellX, lineY, colWidths[c], paddingH, col.effectiveAlignment(), color);
@@ -276,5 +280,17 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
         ctx.stream().showText(PdfTextHelper.truncate(sb.toString(), tableWidth - 6f, font, fs));
         ctx.stream().endText();
         ctx.setY(ctx.y() - SUBTITLE_HEIGHT);
+    }
+
+    /** Computes the Y position of the first text line based on vertical alignment. */
+    private static float vAlignOffset(float cellTop, float cellHeight, float fontSize,
+                                      int lineCount, float lineHeight, float paddingV,
+                                      VerticalAlignment vAlign) {
+        float contentHeight = lineCount * lineHeight;
+        return switch (vAlign) {
+            case TOP -> cellTop - paddingV - fontSize;
+            case BOTTOM -> cellTop - cellHeight + paddingV + contentHeight - fontSize;
+            case MIDDLE -> cellTop - (cellHeight - contentHeight) / 2f - fontSize;
+        };
     }
 }

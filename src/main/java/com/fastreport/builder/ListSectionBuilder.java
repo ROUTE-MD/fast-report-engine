@@ -5,6 +5,7 @@ import com.fastreport.model.column.ColumnType;
 import com.fastreport.model.section.ListSection;
 import com.fastreport.model.style.Alignment;
 import com.fastreport.model.style.TableStyle;
+import com.fastreport.model.style.VerticalAlignment;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -49,10 +50,17 @@ public class ListSectionBuilder {
         return this;
     }
 
-    /** Adds a column with custom width weight and explicit alignment. */
+    /** Adds a column with custom width weight and explicit horizontal alignment. */
     public ListSectionBuilder column(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type)
                 .widthWeight(widthWeight).alignment(alignment).build());
+        return this;
+    }
+
+    /** Adds a column with custom width weight, horizontal and vertical alignment. */
+    public ListSectionBuilder column(String key, String label, ColumnType type, float widthWeight, Alignment alignment, VerticalAlignment vAlign) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).alignment(alignment).verticalAlignment(vAlign).build());
         return this;
     }
 
@@ -84,10 +92,18 @@ public class ListSectionBuilder {
         return this;
     }
 
-    /** Adds a base column with custom width weight and explicit alignment. */
+    /** Adds a base column with custom width weight and explicit horizontal alignment. */
     public ListSectionBuilder baseColumn(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type)
                 .widthWeight(widthWeight).alignment(alignment).baseColumn(true).build());
+        baseColumnKeys.add(key);
+        return this;
+    }
+
+    /** Adds a base column with custom width weight, horizontal and vertical alignment. */
+    public ListSectionBuilder baseColumn(String key, String label, ColumnType type, float widthWeight, Alignment alignment, VerticalAlignment vAlign) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).alignment(alignment).verticalAlignment(vAlign).baseColumn(true).build());
         baseColumnKeys.add(key);
         return this;
     }

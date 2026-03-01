@@ -3,6 +3,7 @@ package com.fastreport.renderer.xlsx;
 import com.fastreport.model.column.ColumnDef;
 import com.fastreport.model.column.ColumnType;
 import com.fastreport.model.style.Alignment;
+import com.fastreport.model.style.VerticalAlignment;
 import org.dhatim.fastexcel.Worksheet;
 
 import java.io.IOException;
@@ -74,6 +75,16 @@ final class XlsxFormatUtil {
             case LEFT -> "left";
             case CENTER -> "center";
             case RIGHT -> "right";
+        };
+    }
+
+    /** Returns the Excel vertical alignment string for a column. */
+    static String excelVerticalAlignment(ColumnDef col) {
+        VerticalAlignment va = col.effectiveVerticalAlignment();
+        return switch (va) {
+            case TOP -> "top";
+            case MIDDLE -> "center";
+            case BOTTOM -> "bottom";
         };
     }
 

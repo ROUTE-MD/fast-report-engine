@@ -66,7 +66,8 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                 XlsxFormatUtil.writeTypedValue(ws, row, c, val, col.type(), curr, datePat);
 
                 var style = ws.style(row, c).fontSize(10)
-                        .horizontalAlignment(XlsxFormatUtil.excelAlignment(col));
+                        .horizontalAlignment(XlsxFormatUtil.excelAlignment(col))
+                        .verticalAlignment(XlsxFormatUtil.excelVerticalAlignment(col));
 
                 if (isAlt) style.fillColor(ALT_ROW_BG);
                 if (col.wrapText()) style.wrapText(true);
