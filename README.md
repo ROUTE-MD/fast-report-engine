@@ -5,14 +5,16 @@ Declarative builder API, responsive table layout, theming, and dual PDF/XLSX out
 
 ## Features
 
-- **Sealed section model** — `FullWidthRow`, `DetailSection`, `ListSection`, `SeparatorLine`
+- **Sealed section model** — `FullWidthRow`, `DetailSection`, `ListSection`, `SeparatorLine`, `MetadataBlock`
 - **Responsive table layout** — columns that don't fit the PDF page overflow into key-value detail rows beneath each record
 - **Text wrapping** — enabled by default on all columns (PDF + XLSX), with dynamic row heights in PDF; disable per-column with `columnNoWrap`/`baseColumnNoWrap`
 - **Column alignment** — per-column horizontal (`LEFT`, `CENTER`, `RIGHT`) and vertical (`TOP`, `MIDDLE`, `BOTTOM`) alignment
 - **Streaming support** — pass an `Iterator` to render millions of rows without loading all data in memory
 - **Dual output** — same `ReportDefinition` renders to both PDF and XLSX
 - **Theming** — full control over fonts, colors, table styles, detail styles, and page footer
-- **Logo & metadata** — optional logo on every page, ordered key-value metadata header
+- **Title alignment** — center, left, or right align the report title with `titleCenter()` or `titleAlignment()`
+- **Logo & metadata** — optional logo on every page, ordered key-value metadata rendered as sections
+- **Metadata ordering** — `meta()`, `separator()`, and sections respect insertion order; separators before metadata render before metadata
 - **Separator lines** — insert horizontal rules anywhere in the report with `separator()`
 - **Alternating row colors**, negative-value highlighting in red, summary/totals row
 - **Automatic page breaks** with repeated table headers on new pages
@@ -60,11 +62,13 @@ import com.fastreport.model.style.VerticalAlignment;
 
 var report = new ReportBuilder()
     .title("Monthly Report")
+    .titleCenter()                        // or .titleAlignment(Alignment.CENTER)
     .landscape()                          // or .portrait()
     .logo(logoPngBytes, 80f, 40f)         // optional
+    .separator()                          // line before metadata
     .meta("Department", "Finance")
     .meta("Period", "January 2024")
-    .separator()                          // horizontal line
+    .separator()                          // line after metadata
 
     // Key-value detail section
     .detailSection()
@@ -280,7 +284,7 @@ src/main/java/com/fastreport/
 │   ├── ReportTheme.java
 │   ├── column/                     # ColumnDef, ColumnType
 │   ├── content/                    # TextContent, DetailField
-│   ├── section/                    # ReportSection (sealed), FullWidthRow, DetailSection, ListSection, SeparatorLine
+│   ├── section/                    # ReportSection (sealed), FullWidthRow, DetailSection, ListSection, SeparatorLine, MetadataBlock
 │   └── style/                      # FontStyle, CellStyle, TableStyle, Alignment, VerticalAlignment
 └── renderer/
     ├── ReportRenderer.java         # Interface

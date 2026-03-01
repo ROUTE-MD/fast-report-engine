@@ -37,35 +37,6 @@ public class PdfRenderer implements ReportRenderer {
                     ctx.margin(), ctx.y(), ctx.usableWidth(), 0f, titleAlign, titleFs.color());
             ctx.moveY(-4f);
 
-            // Metadata
-            if (report.getMetadata() != null && !report.getMetadata().isEmpty()) {
-                FontStyle labelFs = report.getTheme().metadataLabelStyle();
-                FontStyle valueFs = report.getTheme().metadataValueStyle();
-                PDType1Font labelFont = PdfPageContext.resolveFont(labelFs);
-                PDType1Font valueFont = PdfPageContext.resolveFont(valueFs);
-
-                for (var entry : report.getMetadata().entrySet()) {
-                    ctx.moveY(-11f);
-                    String labelText = entry.getKey() + ": ";
-                    float labelW = labelFont.getStringWidth(labelText) / 1000f * labelFs.fontSize();
-
-                    ctx.stream().beginText();
-                    ctx.stream().setFont(labelFont, labelFs.fontSize());
-                    ctx.stream().setNonStrokingColor(labelFs.color());
-                    ctx.stream().newLineAtOffset(ctx.margin(), ctx.y());
-                    ctx.stream().showText(labelText);
-                    ctx.stream().endText();
-
-                    ctx.stream().beginText();
-                    ctx.stream().setFont(valueFont, valueFs.fontSize());
-                    ctx.stream().setNonStrokingColor(valueFs.color());
-                    ctx.stream().newLineAtOffset(ctx.margin() + labelW, ctx.y());
-                    ctx.stream().showText(entry.getValue());
-                    ctx.stream().endText();
-                }
-                ctx.moveY(-6f);
-            }
-
             // Sections
             if (report.getSections() != null) {
                 for (ReportSection section : report.getSections()) {
@@ -74,6 +45,7 @@ public class PdfRenderer implements ReportRenderer {
                         case DetailSection ds -> detailRenderer.render(ds, ctx);
                         case ListSection ls -> listRenderer.render(ls, ctx);
                         case SeparatorLine sl -> renderSeparator(sl, ctx);
+                        case MetadataBlock mb -> renderMetadata(mb, ctx);
                     }
                 }
             }
@@ -81,6 +53,35 @@ public class PdfRenderer implements ReportRenderer {
             ctx.closeFinal();
             doc.save(out);
         }
+    }
+
+    private void renderMetadata(MetadataBlock mb, PdfPageContext ctx) throws IOException {
+        FontStyle labelFs = ctx.theme().metadataLabelStyle();
+        FontStyle valueFs = ctx.theme().metadataValueStyle();
+        PDType1Font labelFont = PdfPageContext.resolveFont(labelFs);
+        PDType1Font valueFont = PdfPageContext.resolveFont(valueFs);
+
+        for (var entry : mb.entries().entrySet()) {
+            ctx.moveY(-11f);
+            ctx.ensureSpace(11f);
+            String labelText = entry.getKey() + ": ";
+            float labelW = labelFont.getStringWidth(labelText) / 1000f * labelFs.fontSize();
+
+            ctx.stream().beginText();
+            ctx.stream().setFont(labelFont, labelFs.fontSize());
+            ctx.stream().setNonStrokingColor(labelFs.color());
+            ctx.stream().newLineAtOffset(ctx.margin(), ctx.y());
+            ctx.stream().showText(labelText);
+            ctx.stream().endText();
+
+            ctx.stream().beginText();
+            ctx.stream().setFont(valueFont, valueFs.fontSize());
+            ctx.stream().setNonStrokingColor(valueFs.color());
+            ctx.stream().newLineAtOffset(ctx.margin() + labelW, ctx.y());
+            ctx.stream().showText(entry.getValue());
+            ctx.stream().endText();
+        }
+        ctx.moveY(-6f);
     }
 
     private void renderSeparator(SeparatorLine sl, PdfPageContext ctx) throws IOException {

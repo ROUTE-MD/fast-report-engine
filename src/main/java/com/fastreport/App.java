@@ -124,7 +124,8 @@ public class App {
                 .titleAlignment(Alignment.CENTER)
                 .separator()
                 .meta("Periodo", "01/01/2024 - 31/12/2024")
-                .meta("Generato", now);
+                .meta("Generato", now)
+                .separator();
 
         if (logo != null) compact.logo(logo, 80f, 40f);
         compact.listSection()

@@ -38,20 +38,6 @@ public class XlsxRenderer implements ReportRenderer {
             ws.style(titleRow, 0).bold().fontSize((int) titleFs.fontSize())
                     .fontColor(colorHex(titleFs.color())).horizontalAlignment(xlsxAlign).set();
 
-            // Metadata
-            if (report.getMetadata() != null) {
-                FontStyle labelFs = report.getTheme().metadataLabelStyle();
-                for (var entry : report.getMetadata().entrySet()) {
-                    int row = ctx.nextRow();
-                    ws.value(row, 0, entry.getKey() + ":");
-                    ws.style(row, 0).bold().fontSize((int) labelFs.fontSize())
-                            .fontColor(colorHex(labelFs.color())).set();
-                    ws.value(row, 1, entry.getValue());
-                    ws.style(row, 1).fontSize((int) labelFs.fontSize())
-                            .fontColor(colorHex(report.getTheme().metadataValueStyle().color())).set();
-                }
-            }
-
             // Sections
             if (report.getSections() != null) {
                 for (ReportSection section : report.getSections()) {
@@ -64,6 +50,18 @@ public class XlsxRenderer implements ReportRenderer {
                             String hex = sl.color() != null ? colorHex(sl.color()) : "3498DB";
                             ws.style(row, 0).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
                                     .borderColor(BorderSide.BOTTOM, hex).set();
+                        }
+                        case MetadataBlock mb -> {
+                            FontStyle labelFs = report.getTheme().metadataLabelStyle();
+                            for (var entry : mb.entries().entrySet()) {
+                                int row = ctx.nextRow();
+                                ws.value(row, 0, entry.getKey() + ":");
+                                ws.style(row, 0).bold().fontSize((int) labelFs.fontSize())
+                                        .fontColor(colorHex(labelFs.color())).set();
+                                ws.value(row, 1, entry.getValue());
+                                ws.style(row, 1).fontSize((int) labelFs.fontSize())
+                                        .fontColor(colorHex(report.getTheme().metadataValueStyle().color())).set();
+                            }
                         }
                     }
                 }
