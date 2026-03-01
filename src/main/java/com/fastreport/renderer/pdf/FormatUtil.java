@@ -62,8 +62,15 @@ final class FormatUtil {
         return false;
     }
 
-    /** Returns true if the column type should show negative values in red. */
-    static boolean shouldRedIfNegative(ColumnType type) {
+    /** Returns true if the value is a positive number (strictly > 0). */
+    static boolean isPositive(Object value) {
+        if (value instanceof BigDecimal bd) return bd.signum() > 0;
+        if (value instanceof Number n) return n.doubleValue() > 0;
+        return false;
+    }
+
+    /** Returns true if the column type should color values by sign (red/green). */
+    static boolean shouldColorBySign(ColumnType type) {
         return type == ColumnType.CURRENCY || type == ColumnType.DECIMAL;
     }
 }

@@ -28,6 +28,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
     private static final float ACCENT_BAR_WIDTH = 2.5f;
     private static final float LINE_HEIGHT_FACTOR = 1.3f;
     private static final Color RED = new Color(0xCC, 0x00, 0x00);
+    private static final Color GREEN = new Color(0x00, 0x88, 0x00);
 
     @Override
     public void render(ListSection section, PdfPageContext ctx) throws IOException {
@@ -158,8 +159,11 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                     detailWrappedLines.add(lines);
                     detailLabelWidths.add(labelW);
                     detailLabels.add(label);
-                    Color valColor = (FormatUtil.shouldRedIfNegative(dc.type()) && FormatUtil.isNegative(val))
-                            ? RED : ts.detailRowValueStyle().font().color();
+                    Color valColor = ts.detailRowValueStyle().font().color();
+                    if (FormatUtil.shouldColorBySign(dc.type())) {
+                        if (FormatUtil.isNegative(val)) valColor = RED;
+                        else if (FormatUtil.isPositive(val)) valColor = GREEN;
+                    }
                     detailColors.add(valColor);
 
                     int gr = detailGridRow[d];
@@ -196,8 +200,11 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
             for (int c = 0; c < mainCols.size(); c++) {
                 ColumnDef col = mainCols.get(c);
                 Object val = row.get(col.key());
-                Color color = (FormatUtil.shouldRedIfNegative(col.type()) && FormatUtil.isNegative(val))
-                        ? RED : rowStyle.font().color();
+                Color color = rowStyle.font().color();
+                if (FormatUtil.shouldColorBySign(col.type())) {
+                    if (FormatUtil.isNegative(val)) color = RED;
+                    else if (FormatUtil.isPositive(val)) color = GREEN;
+                }
 
                 RowLayoutCalculator.CellLayout cell = rowLayout.cells().get(c);
                 List<String> lines = cell.lines();
@@ -321,8 +328,11 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                 } else {
                     text = FormatUtil.format(val, col, curr, datePat);
                 }
-                Color color = (FormatUtil.shouldRedIfNegative(col.type()) && FormatUtil.isNegative(val))
-                        ? RED : Color.BLACK;
+                Color color = Color.BLACK;
+                if (FormatUtil.shouldColorBySign(col.type())) {
+                    if (FormatUtil.isNegative(val)) color = RED;
+                    else if (FormatUtil.isPositive(val)) color = GREEN;
+                }
                 Alignment align = c == 0 && val == null ? Alignment.LEFT : col.effectiveAlignment();
                 PdfTextHelper.drawText(ctx.stream(), text, boldFont, 8f,
                         sumCellX, sumTextY, colWidths[c], 3f, align, color);
