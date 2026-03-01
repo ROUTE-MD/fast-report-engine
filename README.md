@@ -5,12 +5,15 @@ Declarative builder API, responsive table layout, theming, and dual PDF/XLSX out
 
 ## Features
 
-- **Sealed section model** — `FullWidthRow`, `DetailSection`, `ListSection`
+- **Sealed section model** — `FullWidthRow`, `DetailSection`, `ListSection`, `SeparatorLine`
 - **Responsive table layout** — columns that don't fit the PDF page overflow into key-value detail rows beneath each record
+- **Text wrapping** — enabled by default on all columns (PDF + XLSX), with dynamic row heights in PDF; disable per-column with `columnNoWrap`/`baseColumnNoWrap`
+- **Column alignment** — per-column horizontal (`LEFT`, `CENTER`, `RIGHT`) and vertical (`TOP`, `MIDDLE`, `BOTTOM`) alignment
 - **Streaming support** — pass an `Iterator` to render millions of rows without loading all data in memory
 - **Dual output** — same `ReportDefinition` renders to both PDF and XLSX
 - **Theming** — full control over fonts, colors, table styles, detail styles, and page footer
 - **Logo & metadata** — optional logo on every page, ordered key-value metadata header
+- **Separator lines** — insert horizontal rules anywhere in the report with `separator()`
 - **Alternating row colors**, negative-value highlighting in red, summary/totals row
 - **Automatic page breaks** with repeated table headers on new pages
 
@@ -52,6 +55,8 @@ Generates `streaming_landscape.pdf` and `streaming_report.xlsx` using chunked it
 ```java
 import com.fastreport.builder.ReportBuilder;
 import com.fastreport.model.column.ColumnType;
+import com.fastreport.model.style.Alignment;
+import com.fastreport.model.style.VerticalAlignment;
 
 var report = new ReportBuilder()
     .title("Monthly Report")
@@ -59,6 +64,7 @@ var report = new ReportBuilder()
     .logo(logoPngBytes, 80f, 40f)         // optional
     .meta("Department", "Finance")
     .meta("Period", "January 2024")
+    .separator()                          // horizontal line
 
     // Key-value detail section
     .detailSection()
@@ -67,6 +73,8 @@ var report = new ReportBuilder()
         .field("Account", "IT60 X054 ...")
         .field("Balance", new BigDecimal("42567.89"), ColumnType.CURRENCY)
         .end()
+
+    .separator()                          // another line
 
     // Full-width separator row
     .fullWidthRow()
@@ -78,10 +86,11 @@ var report = new ReportBuilder()
     .listSection()
         .title("Transaction List")
         .baseColumn("date", "Date", ColumnType.DATE)          // always in table header
-        .baseColumn("desc", "Description", ColumnType.STRING)
+        .baseColumn("desc", "Description", ColumnType.STRING, 2.0f,
+                    Alignment.LEFT, VerticalAlignment.TOP)     // left + top aligned
         .baseColumn("amount", "Amount", ColumnType.CURRENCY)
         .column("category", "Category", ColumnType.STRING)    // may overflow to detail rows
-        .column("status", "Status", ColumnType.STRING)
+        .columnNoWrap("code", "Code", ColumnType.STRING)      // no wrapping, truncate
         .rows(dataRows)                   // List, Iterable, or Iterator
         .summaryValues(Map.of("amount", totalAmount))
         .end()
@@ -175,6 +184,52 @@ A data table with typed columns, responsive overflow, alternating rows, and opti
 
 In XLSX, all columns are always shown as headers (Excel has horizontal scroll).
 
+### SeparatorLine
+
+A horizontal line spanning the full page width. Insert anywhere between sections.
+
+```java
+.separator()                              // default: blue accent, 1.5pt
+.separator(Color.RED)                     // custom color
+.separator(Color.GRAY, 0.5f)              // custom color + thickness
+```
+
+## Column Options
+
+### Text Wrapping
+
+All columns wrap by default — long text flows to multiple lines with dynamic row height in PDF and cell wrap in XLSX. Disable per-column:
+
+```java
+.columnNoWrap("code", "Code", ColumnType.STRING)          // truncates with "..."
+.baseColumnNoWrap("id", "ID", ColumnType.STRING, 1.5f)    // base column, no wrap
+```
+
+Long words without spaces are also force-broken across lines.
+
+### Horizontal Alignment
+
+Auto-determined from column type (strings left, numbers right), or set explicitly:
+
+```java
+.column("name", "Name", ColumnType.STRING, 1.0f, Alignment.CENTER)
+.baseColumn("total", "Total", ColumnType.CURRENCY, 1.3f, Alignment.RIGHT)
+```
+
+### Vertical Alignment
+
+Default is `MIDDLE`. Set per-column when rows have varying heights due to wrapping:
+
+```java
+.baseColumn("desc", "Description", ColumnType.STRING, 2.0f,
+            Alignment.LEFT, VerticalAlignment.TOP)
+
+.column("amount", "Amount", ColumnType.CURRENCY, 1.3f,
+        Alignment.RIGHT, VerticalAlignment.BOTTOM)
+```
+
+Values: `TOP`, `MIDDLE`, `BOTTOM` — applied in both PDF and XLSX.
+
 ## Theming
 
 Start from defaults and override what you need:
@@ -217,16 +272,16 @@ src/main/java/com/fastreport/
 │   └── ReportEngine.java           # Facade: renderPdf() / renderXlsx()
 ├── layout/
 │   ├── ResponsiveTableLayout.java  # Base vs detail column splitting
-│   ├── RowLayoutCalculator.java
-│   └── TextWrapper.java
+│   ├── RowLayoutCalculator.java    # Dynamic row height with wrapping
+│   └── TextWrapper.java            # Word-wrap + force-break
 ├── model/
 │   ├── ReportDefinition.java
 │   ├── ReportOrientation.java
 │   ├── ReportTheme.java
 │   ├── column/                     # ColumnDef, ColumnType
 │   ├── content/                    # TextContent, DetailField
-│   ├── section/                    # ReportSection (sealed), FullWidthRow, DetailSection, ListSection
-│   └── style/                      # FontStyle, CellStyle, TableStyle, Alignment
+│   ├── section/                    # ReportSection (sealed), FullWidthRow, DetailSection, ListSection, SeparatorLine
+│   └── style/                      # FontStyle, CellStyle, TableStyle, Alignment, VerticalAlignment
 └── renderer/
     ├── ReportRenderer.java         # Interface
     ├── pdf/                        # PDFBox renderer
