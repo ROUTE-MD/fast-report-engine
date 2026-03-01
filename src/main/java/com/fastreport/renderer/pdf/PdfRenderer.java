@@ -46,6 +46,7 @@ public class PdfRenderer implements ReportRenderer {
                         case ListSection ls -> listRenderer.render(ls, ctx);
                         case SeparatorLine sl -> renderSeparator(sl, ctx);
                         case MetadataBlock mb -> renderMetadata(mb, ctx);
+                        case SpacerSection sp -> ctx.moveY(-11f * sp.lines());
                     }
                 }
             }

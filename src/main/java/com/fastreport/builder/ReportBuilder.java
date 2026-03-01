@@ -6,6 +6,7 @@ import com.fastreport.model.ReportTheme;
 import com.fastreport.model.section.MetadataBlock;
 import com.fastreport.model.section.ReportSection;
 import com.fastreport.model.section.SeparatorLine;
+import com.fastreport.model.section.SpacerSection;
 import com.fastreport.model.style.Alignment;
 
 import java.io.IOException;
@@ -116,6 +117,13 @@ public class ReportBuilder {
     public ReportBuilder separator(java.awt.Color color) {
         flushMeta();
         this.sections.add(SeparatorLine.builder().color(color).build());
+        return this;
+    }
+
+    /** Adds vertical blank space (number of lines). */
+    public ReportBuilder space(int lines) {
+        flushMeta();
+        this.sections.add(new SpacerSection(lines));
         return this;
     }
 

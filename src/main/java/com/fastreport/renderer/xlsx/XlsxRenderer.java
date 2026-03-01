@@ -51,6 +51,9 @@ public class XlsxRenderer implements ReportRenderer {
                             ws.style(row, 0).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
                                     .borderColor(BorderSide.BOTTOM, hex).set();
                         }
+                        case SpacerSection sp -> {
+                            for (int i = 0; i < sp.lines(); i++) ctx.nextRow();
+                        }
                         case MetadataBlock mb -> {
                             FontStyle labelFs = report.getTheme().metadataLabelStyle();
                             for (var entry : mb.entries().entrySet()) {

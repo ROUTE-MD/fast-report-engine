@@ -7,6 +7,7 @@ import com.fastreport.model.ReportOrientation;
 import com.fastreport.model.column.ColumnType;
 import com.fastreport.model.style.Alignment;
 
+import java.awt.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class App {
@@ -122,10 +124,10 @@ public class App {
         var compact = new ReportBuilder()
                 .title("Banca di Asti - Movimenti (Vista Compatta)")
                 .titleAlignment(Alignment.CENTER)
-                .separator()
+                .separator(Color.red, 0.5f)
                 .meta("Periodo", "01/01/2024 - 31/12/2024")
                 .meta("Generato", now)
-                .separator();
+                .separator(Color.red, 0.5f);
 
         if (logo != null) compact.logo(logo, 80f, 40f);
         compact.listSection()
@@ -159,7 +161,9 @@ public class App {
     }
 
     @FunctionalInterface
-    private interface IORunnable { void run() throws IOException; }
+    private interface IORunnable {
+        void run() throws IOException;
+    }
 
     private static List<Map<String, Object>> generateData() {
         var rng = ThreadLocalRandom.current();
