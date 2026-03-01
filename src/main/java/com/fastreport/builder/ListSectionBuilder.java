@@ -6,6 +6,7 @@ import com.fastreport.model.section.ListSection;
 import com.fastreport.model.style.TableStyle;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,12 @@ public class ListSectionBuilder {
 
     public ListSectionBuilder rows(List<Map<String, Object>> rows) {
         this.rows = rows;
+        return this;
+    }
+
+    /** Accepts a single-pass Iterator (e.g. a DB cursor) — streamed without loading all into memory. */
+    public ListSectionBuilder rows(Iterator<Map<String, Object>> iterator) {
+        this.rows = () -> iterator;
         return this;
     }
 
