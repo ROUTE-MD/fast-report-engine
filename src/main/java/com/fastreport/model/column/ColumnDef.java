@@ -15,6 +15,7 @@ import lombok.Builder;
  * @param baseColumn        true = always visible in table header
  * @param alignment         explicit horizontal alignment (null = auto from type)
  * @param verticalAlignment vertical alignment within the cell (default MIDDLE)
+ * @param inline            true = always render as detail row, never in table header
  * @param wrapText          true = wrap text in both PDF and XLSX (default true)
  * @param style             per-column style override (null = use table style)
  * @param excelWidth        explicit Excel column width in characters (0 = auto)
@@ -26,6 +27,7 @@ public record ColumnDef(
         ColumnType type,
         float widthWeight,
         boolean baseColumn,
+        boolean inline,
         Alignment alignment,
         VerticalAlignment verticalAlignment,
         boolean wrapText,

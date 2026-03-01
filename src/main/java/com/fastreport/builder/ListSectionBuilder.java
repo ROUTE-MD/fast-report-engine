@@ -124,6 +124,26 @@ public class ListSectionBuilder {
         return this;
     }
 
+    /** Adds an inline column — always rendered as a detail row, never in the table header. */
+    public ListSectionBuilder inlineColumn(String key, String label, ColumnType type) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type).inline(true).build());
+        return this;
+    }
+
+    /** Adds an inline column with custom width weight. */
+    public ListSectionBuilder inlineColumn(String key, String label, ColumnType type, float widthWeight) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).inline(true).build());
+        return this;
+    }
+
+    /** Adds an inline column with custom alignment. */
+    public ListSectionBuilder inlineColumn(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).alignment(alignment).inline(true).build());
+        return this;
+    }
+
     /** Adds a pre-built column definition. */
     public ListSectionBuilder column(ColumnDef columnDef) {
         columns.add(columnDef);

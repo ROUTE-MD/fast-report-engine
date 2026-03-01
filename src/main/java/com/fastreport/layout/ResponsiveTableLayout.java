@@ -29,17 +29,28 @@ public class ResponsiveTableLayout {
      */
     public ResponsiveTableLayout(List<ColumnDef> requestedColumns, float usableWidth,
                                  List<String> baseColumnKeys) {
-        if (usableWidth / requestedColumns.size() >= MIN_USEFUL_WIDTH) {
-            this.mainColumns = new ArrayList<>(requestedColumns);
-            this.detailColumns = List.of();
+        // Separate inline columns first — they always go to detail rows
+        var candidateColumns = new ArrayList<ColumnDef>();
+        var forceDetail = new ArrayList<ColumnDef>();
+        for (ColumnDef col : requestedColumns) {
+            if (col.inline()) {
+                forceDetail.add(col);
+            } else {
+                candidateColumns.add(col);
+            }
+        }
+
+        if (!candidateColumns.isEmpty() && usableWidth / candidateColumns.size() >= MIN_USEFUL_WIDTH) {
+            this.mainColumns = new ArrayList<>(candidateColumns);
+            this.detailColumns = new ArrayList<>(forceDetail);
         } else {
             var main = new ArrayList<ColumnDef>();
             var detail = new ArrayList<ColumnDef>();
             for (ColumnDef col : requestedColumns) {
-                if (baseColumnKeys.contains(col.key())) {
-                    main.add(col);
-                } else {
+                if (col.inline() || !baseColumnKeys.contains(col.key())) {
                     detail.add(col);
+                } else {
+                    main.add(col);
                 }
             }
             while (main.size() > MIN_MAIN_COLUMNS && usableWidth / main.size() < MIN_USEFUL_WIDTH) {
