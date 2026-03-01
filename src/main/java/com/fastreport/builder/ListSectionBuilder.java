@@ -3,6 +3,7 @@ package com.fastreport.builder;
 import com.fastreport.model.column.ColumnDef;
 import com.fastreport.model.column.ColumnType;
 import com.fastreport.model.section.ListSection;
+import com.fastreport.model.style.Alignment;
 import com.fastreport.model.style.TableStyle;
 
 import java.util.ArrayList;
@@ -48,6 +49,13 @@ public class ListSectionBuilder {
         return this;
     }
 
+    /** Adds a column with custom width weight and explicit alignment. */
+    public ListSectionBuilder column(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).alignment(alignment).build());
+        return this;
+    }
+
     /** Adds a column and marks it as a base column (preferred for table header). */
     public ListSectionBuilder baseColumn(String key, String label, ColumnType type) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type).baseColumn(true).build());
@@ -59,6 +67,14 @@ public class ListSectionBuilder {
     public ListSectionBuilder baseColumn(String key, String label, ColumnType type, float widthWeight) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type)
                 .widthWeight(widthWeight).baseColumn(true).build());
+        baseColumnKeys.add(key);
+        return this;
+    }
+
+    /** Adds a base column with custom width weight and explicit alignment. */
+    public ListSectionBuilder baseColumn(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).alignment(alignment).baseColumn(true).build());
         baseColumnKeys.add(key);
         return this;
     }

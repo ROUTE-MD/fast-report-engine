@@ -1,6 +1,8 @@
 package com.fastreport.renderer.xlsx;
 
+import com.fastreport.model.column.ColumnDef;
 import com.fastreport.model.column.ColumnType;
+import com.fastreport.model.style.Alignment;
 import org.dhatim.fastexcel.Worksheet;
 
 import java.io.IOException;
@@ -65,7 +67,17 @@ final class XlsxFormatUtil {
         }
     }
 
-    /** Returns the Excel horizontal alignment string for a column type. */
+    /** Returns the Excel horizontal alignment string for a column, respecting per-column override. */
+    static String excelAlignment(ColumnDef col) {
+        Alignment a = col.effectiveAlignment();
+        return switch (a) {
+            case LEFT -> "left";
+            case CENTER -> "center";
+            case RIGHT -> "right";
+        };
+    }
+
+    /** Returns the Excel horizontal alignment string for a column type (fallback). */
     static String excelAlignment(ColumnType type) {
         return switch (type) {
             case STRING, BOOLEAN, DATE -> "left";

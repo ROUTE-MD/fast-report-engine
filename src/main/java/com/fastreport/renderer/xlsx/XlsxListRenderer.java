@@ -66,7 +66,7 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                 XlsxFormatUtil.writeTypedValue(ws, row, c, val, col.type(), curr, datePat);
 
                 var style = ws.style(row, c).fontSize(10)
-                        .horizontalAlignment(XlsxFormatUtil.excelAlignment(col.type()));
+                        .horizontalAlignment(XlsxFormatUtil.excelAlignment(col));
 
                 if (isAlt) style.fillColor(ALT_ROW_BG);
                 if (col.type() == ColumnType.STRING) style.wrapText(true);
@@ -96,7 +96,7 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                 if (val != null) {
                     XlsxFormatUtil.writeTypedValue(ws, row, c, val, col.type(), curr, datePat);
                     var style = ws.style(row, c).bold().fontSize(10)
-                            .horizontalAlignment(XlsxFormatUtil.excelAlignment(col.type()))
+                            .horizontalAlignment(XlsxFormatUtil.excelAlignment(col))
                             .borderStyle(BorderSide.TOP, BorderStyle.MEDIUM);
                     if ((col.type() == ColumnType.CURRENCY || col.type() == ColumnType.DECIMAL)
                             && isNegative(val)) {
