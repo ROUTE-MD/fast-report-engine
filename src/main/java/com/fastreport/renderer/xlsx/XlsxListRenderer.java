@@ -35,21 +35,15 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                     .fontColor(colorHex(ctx.theme().subtitleStyle().color())).set();
         }
 
-        // Column widths — factor in widthWeight for proportional sizing
-        float totalWeight = 0f;
-        for (ColumnDef col : allCols) totalWeight += col.widthWeight();
-        int baseWidth = 14;
+        // Initialize max column widths from header labels
+        int[] maxWidths = new int[allCols.size()];
         for (int c = 0; c < allCols.size(); c++) {
             ColumnDef col = allCols.get(c);
-            int w;
             if (col.excelWidth() > 0) {
-                w = col.excelWidth();
+                maxWidths[c] = col.excelWidth();
             } else {
-                int estimated = XlsxFormatUtil.estimateWidth(col.type(), col.label());
-                int weighted = (int) (baseWidth * (col.widthWeight() / totalWeight) * allCols.size());
-                w = Math.max(estimated, weighted);
+                maxWidths[c] = XlsxFormatUtil.estimateWidth(col.type(), col.label());
             }
-            ws.width(c, w);
         }
 
         // Header row
@@ -62,7 +56,7 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                     .borderStyle(BorderSide.BOTTOM, BorderStyle.THIN).set();
         }
 
-        // Data rows
+        // Data rows — track max content width per column
         int rowCount = 0;
         for (Map<String, Object> data : section.rows()) {
             rowCount++;
@@ -75,12 +69,17 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
 
                 XlsxFormatUtil.writeTypedValue(ws, row, c, val, col.type(), curr, datePat);
 
+                // Track max content width (skip if explicit excelWidth is set)
+                if (col.excelWidth() == 0) {
+                    int valWidth = XlsxFormatUtil.estimateValueWidth(val, col.type(), curr);
+                    if (valWidth > maxWidths[c]) maxWidths[c] = valWidth;
+                }
+
                 var style = ws.style(row, c).fontSize(10)
                         .horizontalAlignment(XlsxFormatUtil.excelAlignment(col))
                         .verticalAlignment(XlsxFormatUtil.excelVerticalAlignment(col));
 
                 if (isAlt) style.fillColor(ALT_ROW_BG);
-                if (col.wrapText()) style.wrapText(true);
 
                 if ((col.type() == ColumnType.CURRENCY || col.type() == ColumnType.DECIMAL)
                         && isNegative(val)) {
@@ -88,6 +87,11 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                 }
                 style.set();
             }
+        }
+
+        // Apply final column widths based on actual content
+        for (int c = 0; c < allCols.size(); c++) {
+            ws.width(c, maxWidths[c]);
         }
 
         // Summary row

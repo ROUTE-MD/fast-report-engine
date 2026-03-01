@@ -110,4 +110,32 @@ final class XlsxFormatUtil {
         };
         return Math.max(labelW, typeW);
     }
+
+    /** Maximum auto-sized column width in characters. */
+    static final int MAX_AUTO_WIDTH = 80;
+
+    /** Estimates the display width (in characters) of a cell value. */
+    static int estimateValueWidth(Object value, ColumnType type, String currencySymbol) {
+        if (value == null) return 0;
+        int w = switch (type) {
+            case STRING -> value.toString().length();
+            case INTEGER -> {
+                if (value instanceof Number n) yield String.format("%,d", n.longValue()).length();
+                yield value.toString().length();
+            }
+            case DECIMAL -> {
+                if (value instanceof Number n) yield String.format("%,.2f", n.doubleValue()).length();
+                yield value.toString().length();
+            }
+            case CURRENCY -> {
+                double d = value instanceof BigDecimal bd ? bd.doubleValue()
+                        : value instanceof Number n ? n.doubleValue() : 0;
+                yield currencySymbol.length() + String.format("%,.2f", d).length();
+            }
+            case DATE -> 12;
+            case PERCENTAGE -> 8;
+            case BOOLEAN -> 4;
+        };
+        return Math.min(w + 2, MAX_AUTO_WIDTH);
+    }
 }

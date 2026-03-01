@@ -57,12 +57,16 @@ public class XlsxRenderer implements ReportRenderer {
                         case DetailSection ds -> detailRenderer.render(ds, ctx);
                         case ListSection ls -> listRenderer.render(ls, ctx);
                         case SeparatorLine sl -> {
-                            int row = ctx.nextRow();
-                            String hex = sl.color() != null ? colorHex(sl.color()) : "3498DB";
-                            for (int c = 0; c < colCount; c++) {
-                                ws.style(row, c).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
-                                        .borderColor(BorderSide.BOTTOM, hex).set();
+                            // Apply border to the previous row instead of creating an empty one
+                            int prevRow = ctx.currentRow() - 1;
+                            if (prevRow >= 0) {
+                                String hex = sl.color() != null ? colorHex(sl.color()) : "3498DB";
+                                for (int c = 0; c < colCount; c++) {
+                                    ws.style(prevRow, c).borderStyle(BorderSide.BOTTOM, BorderStyle.THIN)
+                                            .borderColor(BorderSide.BOTTOM, hex).set();
+                                }
                             }
+                            ctx.nextRow(); // empty row after separator
                         }
                         case SpacerSection sp -> {
                             for (int i = 0; i < sp.lines(); i++) ctx.nextRow();
