@@ -80,6 +80,7 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                         .verticalAlignment(XlsxFormatUtil.excelVerticalAlignment(col));
 
                 if (isAlt) style.fillColor(ALT_ROW_BG);
+                if (col.wrapText()) style.wrapText(true);
 
                 if ((col.type() == ColumnType.CURRENCY || col.type() == ColumnType.DECIMAL)
                         && isNegative(val)) {
