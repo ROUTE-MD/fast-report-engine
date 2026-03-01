@@ -69,7 +69,7 @@ public class XlsxListRenderer implements XlsxSectionRenderer<ListSection> {
                         .horizontalAlignment(XlsxFormatUtil.excelAlignment(col));
 
                 if (isAlt) style.fillColor(ALT_ROW_BG);
-                if (col.type() == ColumnType.STRING) style.wrapText(true);
+                if (col.wrapText()) style.wrapText(true);
 
                 if ((col.type() == ColumnType.CURRENCY || col.type() == ColumnType.DECIMAL)
                         && isNegative(val)) {

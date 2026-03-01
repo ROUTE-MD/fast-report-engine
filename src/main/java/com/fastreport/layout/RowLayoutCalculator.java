@@ -55,7 +55,9 @@ public final class RowLayoutCalculator {
             Object value = row.get(col.key());
             String text = formatter.apply(value, col);
             float usable = colWidths[i] - 2 * paddingH;
-            List<String> lines = TextWrapper.wrap(text, usable, font, fontSize);
+            List<String> lines = col.wrapText()
+                    ? TextWrapper.wrap(text, usable, font, fontSize)
+                    : List.of(text != null && !text.isEmpty() ? text : "");
             Color color = Color.BLACK;
             cells.add(new CellLayout(lines, colWidths[i], col.effectiveAlignment(), color, font, fontSize));
             float h = lines.size() * lineHeight;

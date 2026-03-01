@@ -180,7 +180,16 @@ public class App {
             var row = new LinkedHashMap<String, Object>();
             row.put("date", date);
             row.put("id", String.format("TXN%08d", i + 1));
-            row.put("description", CATEGORIES[catIdx] + " - " + COUNTERPARTIES[catIdx]);
+            String desc = CATEGORIES[catIdx] + " - " + COUNTERPARTIES[catIdx];
+            // Every 500th row gets a long description to demonstrate text wrapping
+            if (i % 500 == 0) {
+                desc = "Bonifico SEPA ordinario a favore di " + COUNTERPARTIES[catIdx]
+                        + " per pagamento fattura n. " + (i + 1000) + "/" + date.getYear()
+                        + " relativa a servizi di consulenza amministrativa e gestione contabile"
+                        + " del periodo " + date.getMonth() + " " + date.getYear()
+                        + " - Riferimento interno: REF-" + String.format("%06d", i);
+            }
+            row.put("description", desc);
             row.put("amount", amount);
             row.put("category", CATEGORIES[catIdx]);
             row.put("counterparty", COUNTERPARTIES[catIdx]);

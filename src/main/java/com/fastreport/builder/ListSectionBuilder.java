@@ -56,6 +56,19 @@ public class ListSectionBuilder {
         return this;
     }
 
+    /** Adds a column with wrap disabled (text truncated instead of wrapped). */
+    public ListSectionBuilder columnNoWrap(String key, String label, ColumnType type) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type).wrapText(false).build());
+        return this;
+    }
+
+    /** Adds a column with wrap disabled and custom width weight. */
+    public ListSectionBuilder columnNoWrap(String key, String label, ColumnType type, float widthWeight) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).wrapText(false).build());
+        return this;
+    }
+
     /** Adds a column and marks it as a base column (preferred for table header). */
     public ListSectionBuilder baseColumn(String key, String label, ColumnType type) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type).baseColumn(true).build());
@@ -75,6 +88,22 @@ public class ListSectionBuilder {
     public ListSectionBuilder baseColumn(String key, String label, ColumnType type, float widthWeight, Alignment alignment) {
         columns.add(ColumnDef.builder().key(key).label(label).type(type)
                 .widthWeight(widthWeight).alignment(alignment).baseColumn(true).build());
+        baseColumnKeys.add(key);
+        return this;
+    }
+
+    /** Adds a base column with wrap disabled. */
+    public ListSectionBuilder baseColumnNoWrap(String key, String label, ColumnType type) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .baseColumn(true).wrapText(false).build());
+        baseColumnKeys.add(key);
+        return this;
+    }
+
+    /** Adds a base column with wrap disabled and custom width weight. */
+    public ListSectionBuilder baseColumnNoWrap(String key, String label, ColumnType type, float widthWeight) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).baseColumn(true).wrapText(false).build());
         baseColumnKeys.add(key);
         return this;
     }

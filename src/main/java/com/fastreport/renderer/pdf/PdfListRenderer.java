@@ -1,6 +1,8 @@
 package com.fastreport.renderer.pdf;
 
 import com.fastreport.layout.ResponsiveTableLayout;
+import com.fastreport.layout.RowLayoutCalculator;
+import com.fastreport.layout.TextWrapper;
 import com.fastreport.model.column.ColumnDef;
 import com.fastreport.model.section.ListSection;
 import com.fastreport.model.style.Alignment;
@@ -17,11 +19,12 @@ import java.util.Map;
 public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
     private static final float HEADER_HEIGHT = 18f;
-    private static final float MAIN_ROW_HEIGHT = 14f;
+    private static final float MIN_ROW_HEIGHT = 14f;
     private static final float DETAIL_ROW_HEIGHT = 12f;
     private static final float DETAIL_GAP = 2f;
     private static final float SUBTITLE_HEIGHT = 10f;
     private static final float ACCENT_BAR_WIDTH = 2.5f;
+    private static final float LINE_HEIGHT_FACTOR = 1.3f;
     private static final Color RED = new Color(0xCC, 0x00, 0x00);
 
     @Override
@@ -64,12 +67,25 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
         }
 
         // Data rows
+        PDType1Font dataFont = PdfPageContext.resolveFont(ts.rowStyle().font());
+        float fontSize = ts.rowStyle().font().fontSize();
+        float paddingH = ts.rowStyle().paddingH();
+        float paddingV = ts.rowStyle().paddingV();
+        float lineHeight = fontSize * LINE_HEIGHT_FACTOR;
+
         int rowCount = 0;
         for (Map<String, Object> row : section.rows()) {
             rowCount++;
             boolean isAlt = rowCount % 2 == 0;
 
-            float recordHeight = MAIN_ROW_HEIGHT;
+            // Calculate wrapped layout for this row
+            RowLayoutCalculator.RowLayout rowLayout = RowLayoutCalculator.calculate(
+                    row, mainCols, colWidths, dataFont, fontSize, paddingH, paddingV,
+                    (val, col) -> FormatUtil.format(val, col, curr, datePat));
+
+            float mainRowHeight = Math.max(MIN_ROW_HEIGHT, rowLayout.rowHeight());
+
+            float recordHeight = mainRowHeight;
             if (hasDetail) {
                 int detailLines = (int) Math.ceil((double) detailCols.size() / detailPerRow);
                 recordHeight += 2 * DETAIL_GAP + detailLines * DETAIL_ROW_HEIGHT;
@@ -87,39 +103,54 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
             if (rowStyle.backgroundColor() != null) {
                 ctx.stream().setNonStrokingColor(rowStyle.backgroundColor());
-                ctx.stream().addRect(ctx.margin(), y - MAIN_ROW_HEIGHT, layout.tableWidth(), MAIN_ROW_HEIGHT);
+                ctx.stream().addRect(ctx.margin(), y - mainRowHeight, layout.tableWidth(), mainRowHeight);
                 ctx.stream().fill();
             }
 
+            // Draw each cell (possibly multi-line)
             float cellX = ctx.margin();
-            float textY = y - MAIN_ROW_HEIGHT + 4f;
-            PDType1Font dataFont = PdfPageContext.resolveFont(rowStyle.font());
-
             for (int c = 0; c < mainCols.size(); c++) {
                 ColumnDef col = mainCols.get(c);
                 Object val = row.get(col.key());
-                String text = FormatUtil.format(val, col, curr, datePat);
                 Color color = (FormatUtil.shouldRedIfNegative(col.type()) && FormatUtil.isNegative(val))
                         ? RED : rowStyle.font().color();
-                PdfTextHelper.drawText(ctx.stream(), text, dataFont, rowStyle.font().fontSize(),
-                        cellX, textY, colWidths[c], rowStyle.paddingH(), col.effectiveAlignment(), color);
+
+                RowLayoutCalculator.CellLayout cell = rowLayout.cells().get(c);
+                List<String> lines = cell.lines();
+
+                if (lines.size() == 1) {
+                    // Single line — use truncation for noWrap columns
+                    float textY = y - mainRowHeight + paddingV + 1f;
+                    String text = col.wrapText() ? lines.getFirst() :
+                            FormatUtil.format(val, col, curr, datePat);
+                    PdfTextHelper.drawText(ctx.stream(), text, dataFont, fontSize,
+                            cellX, textY, colWidths[c], paddingH, col.effectiveAlignment(), color);
+                } else {
+                    // Multi-line wrapped text
+                    float startY = y - paddingV - fontSize;
+                    for (int ln = 0; ln < lines.size(); ln++) {
+                        float lineY = startY - ln * lineHeight;
+                        PdfTextHelper.drawText(ctx.stream(), lines.get(ln), dataFont, fontSize,
+                                cellX, lineY, colWidths[c], paddingH, col.effectiveAlignment(), color);
+                    }
+                }
                 cellX += colWidths[c];
             }
 
             // Grid line
             ctx.stream().setStrokingColor(ts.gridColor());
             ctx.stream().setLineWidth(0.3f);
-            ctx.stream().moveTo(ctx.margin(), y - MAIN_ROW_HEIGHT);
-            ctx.stream().lineTo(ctx.margin() + layout.tableWidth(), y - MAIN_ROW_HEIGHT);
+            ctx.stream().moveTo(ctx.margin(), y - mainRowHeight);
+            ctx.stream().lineTo(ctx.margin() + layout.tableWidth(), y - mainRowHeight);
             ctx.stream().stroke();
 
-            ctx.setY(y - MAIN_ROW_HEIGHT);
+            ctx.setY(y - mainRowHeight);
 
             // Detail rows
             if (hasDetail) {
                 ctx.moveY(-DETAIL_GAP);
-                int detailLines = (int) Math.ceil((double) detailCols.size() / detailPerRow);
-                float detailHeight = detailLines * DETAIL_ROW_HEIGHT;
+                int detailLineCount = (int) Math.ceil((double) detailCols.size() / detailPerRow);
+                float detailHeight = detailLineCount * DETAIL_ROW_HEIGHT;
 
                 // Background
                 ctx.stream().setNonStrokingColor(ts.detailRowValueStyle().backgroundColor() != null
@@ -173,7 +204,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
         // Summary row
         if (section.showSummaryRow() && section.summaryValues() != null) {
             ctx.moveY(-4f);
-            ctx.ensureSpace(MAIN_ROW_HEIGHT + 6f);
+            ctx.ensureSpace(MIN_ROW_HEIGHT + 6f);
 
             ctx.stream().setStrokingColor(ts.headerStyle().backgroundColor() != null
                     ? ts.headerStyle().backgroundColor() : Color.DARK_GRAY);
@@ -185,7 +216,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
             PDType1Font boldFont = PdfPageContext.resolveFont(true, false);
             float sumCellX = ctx.margin();
-            float sumTextY = ctx.y() - MAIN_ROW_HEIGHT + 4f;
+            float sumTextY = ctx.y() - MIN_ROW_HEIGHT + 4f;
 
             for (int c = 0; c < mainCols.size(); c++) {
                 ColumnDef col = mainCols.get(c);
@@ -203,7 +234,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                         sumCellX, sumTextY, colWidths[c], 3f, align, color);
                 sumCellX += colWidths[c];
             }
-            ctx.setY(ctx.y() - MAIN_ROW_HEIGHT);
+            ctx.setY(ctx.y() - MIN_ROW_HEIGHT);
         }
 
         ctx.moveY(-section.marginBottom());

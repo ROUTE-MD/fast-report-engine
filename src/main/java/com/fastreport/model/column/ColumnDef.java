@@ -13,6 +13,7 @@ import lombok.Builder;
  * @param widthWeight  relative width weight for PDF layout distribution
  * @param baseColumn   true = always visible in table header
  * @param alignment    explicit alignment (null = auto from type)
+ * @param wrapText     true = wrap text in both PDF and XLSX (default true)
  * @param style        per-column style override (null = use table style)
  * @param excelWidth   explicit Excel column width in characters (0 = auto)
  */
@@ -24,6 +25,7 @@ public record ColumnDef(
         float widthWeight,
         boolean baseColumn,
         Alignment alignment,
+        boolean wrapText,
         CellStyle style,
         int excelWidth
 ) {
@@ -38,5 +40,6 @@ public record ColumnDef(
 
     public static class ColumnDefBuilder {
         private float widthWeight = 1.0f;
+        private boolean wrapText = true;
     }
 }
