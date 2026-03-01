@@ -29,6 +29,9 @@ public class PdfRenderer implements ReportRenderer {
             ctx.startNewPage();
 
             // Title
+            if (report.getTitleMarginTop() > 0) {
+                ctx.moveY(-report.getTitleMarginTop());
+            }
             FontStyle titleFs = report.getTheme().titleStyle();
             PDType1Font titleFont = PdfPageContext.resolveFont(titleFs);
             ctx.moveY(-titleFs.fontSize());

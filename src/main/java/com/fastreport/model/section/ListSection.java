@@ -21,11 +21,13 @@ public record ListSection(
         Map<String, Object> summaryValues,
         TableStyle tableStyle,
         float marginTop,
-        float marginBottom
+        float marginBottom,
+        float maxWeight
 ) implements ReportSection {
 
     public static class ListSectionBuilder {
         private float marginTop = 8f;
         private float marginBottom = 8f;
+        private float maxWeight = 0f;
     }
 }

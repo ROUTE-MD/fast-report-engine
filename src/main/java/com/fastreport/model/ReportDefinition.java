@@ -34,6 +34,10 @@ public class ReportDefinition {
     @Builder.Default
     private float logoHeight = 40f;
 
+    /** Extra vertical space before the title (e.g. gap between logo and title). */
+    @Builder.Default
+    private float titleMarginTop = 0f;
+
     @Builder.Default
     private LinkedHashMap<String, String> metadata = new LinkedHashMap<>();
 

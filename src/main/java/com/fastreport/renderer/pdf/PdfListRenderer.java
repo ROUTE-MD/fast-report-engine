@@ -13,6 +13,7 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +49,8 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
         // Layout
         ResponsiveTableLayout layout = new ResponsiveTableLayout(
                 section.columns(), ctx.usableWidth(),
-                section.baseColumnKeys() != null ? section.baseColumnKeys() : List.of());
+                section.baseColumnKeys() != null ? section.baseColumnKeys() : List.of(),
+                section.maxWeight());
 
         List<ColumnDef> mainCols = layout.mainColumns();
         List<ColumnDef> detailCols = layout.detailColumns();
@@ -74,6 +76,19 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
         float paddingV = ts.rowStyle().paddingV();
         float lineHeight = fontSize * LINE_HEIGHT_FACTOR;
 
+        // Detail row fonts (constant across rows, resolved once)
+        PDType1Font detailLabelFont = null, detailValueFont = null;
+        float detailLabelFs = 0f, detailValueFs = 0f, detailLineHeight = 0f;
+        float pairWidth = 0f;
+        if (hasDetail) {
+            detailLabelFont = PdfPageContext.resolveFont(ts.detailRowLabelStyle().font());
+            detailValueFont = PdfPageContext.resolveFont(ts.detailRowValueStyle().font());
+            detailLabelFs = ts.detailRowLabelStyle().font().fontSize();
+            detailValueFs = ts.detailRowValueStyle().font().fontSize();
+            detailLineHeight = detailValueFs * LINE_HEIGHT_FACTOR;
+            pairWidth = layout.tableWidth() / detailPerRow;
+        }
+
         int rowCount = 0;
         for (Map<String, Object> row : section.rows()) {
             rowCount++;
@@ -86,10 +101,55 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
             float mainRowHeight = Math.max(MIN_ROW_HEIGHT, rowLayout.rowHeight());
 
+            // Pre-compute detail wrapping for accurate height calculation
+            float detailTotalHeight = 0f;
+            List<List<String>> detailWrappedLines = null;
+            List<Float> detailLabelWidths = null;
+            List<String> detailLabels = null;
+            List<Color> detailColors = null;
+            float[] gridRowHeights = null;
+
+            if (hasDetail) {
+                int gridRowCount = (int) Math.ceil((double) detailCols.size() / detailPerRow);
+                gridRowHeights = new float[gridRowCount];
+                detailWrappedLines = new ArrayList<>(detailCols.size());
+                detailLabelWidths = new ArrayList<>(detailCols.size());
+                detailLabels = new ArrayList<>(detailCols.size());
+                detailColors = new ArrayList<>(detailCols.size());
+
+                for (int d = 0; d < detailCols.size(); d++) {
+                    ColumnDef dc = detailCols.get(d);
+                    Object val = row.get(dc.key());
+                    String label = dc.label() + ": ";
+                    String value = FormatUtil.format(val, dc, curr, datePat);
+                    float labelW = detailLabelFont.getStringWidth(label) / 1000f * detailLabelFs;
+                    float availW = pairWidth - labelW - ACCENT_BAR_WIDTH - 6f;
+
+                    List<String> lines;
+                    if (dc.wrapText() && availW > 0) {
+                        lines = TextWrapper.wrap(value, availW, detailValueFont, detailValueFs);
+                    } else {
+                        lines = List.of(value != null && !value.isEmpty() ? value : "");
+                    }
+
+                    detailWrappedLines.add(lines);
+                    detailLabelWidths.add(labelW);
+                    detailLabels.add(label);
+                    Color valColor = (FormatUtil.shouldRedIfNegative(dc.type()) && FormatUtil.isNegative(val))
+                            ? RED : ts.detailRowValueStyle().font().color();
+                    detailColors.add(valColor);
+
+                    int gridRow = d / detailPerRow;
+                    float h = Math.max(DETAIL_ROW_HEIGHT, lines.size() * detailLineHeight + 2f);
+                    if (h > gridRowHeights[gridRow]) gridRowHeights[gridRow] = h;
+                }
+
+                for (float h : gridRowHeights) detailTotalHeight += h;
+            }
+
             float recordHeight = mainRowHeight;
             if (hasDetail) {
-                int detailLines = (int) Math.ceil((double) detailCols.size() / detailPerRow);
-                recordHeight += 2 * DETAIL_GAP + detailLines * DETAIL_ROW_HEIGHT;
+                recordHeight += 2 * DETAIL_GAP + detailTotalHeight;
             }
 
             if (ctx.needsPageBreak(recordHeight)) {
@@ -150,58 +210,57 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
             ctx.setY(y - mainRowHeight);
 
-            // Detail rows
+            // Detail rows (with word-wrapping support)
             if (hasDetail) {
                 ctx.moveY(-DETAIL_GAP);
-                int detailLineCount = (int) Math.ceil((double) detailCols.size() / detailPerRow);
-                float detailHeight = detailLineCount * DETAIL_ROW_HEIGHT;
 
                 // Background
                 ctx.stream().setNonStrokingColor(ts.detailRowValueStyle().backgroundColor() != null
                         ? ts.detailRowValueStyle().backgroundColor()
                         : new Color(250, 250, 245));
-                ctx.stream().addRect(ctx.margin(), ctx.y() - detailHeight, layout.tableWidth(), detailHeight);
+                ctx.stream().addRect(ctx.margin(), ctx.y() - detailTotalHeight, layout.tableWidth(), detailTotalHeight);
                 ctx.stream().fill();
 
                 // Accent bar
                 ctx.stream().setNonStrokingColor(ts.accentColor());
-                ctx.stream().addRect(ctx.margin(), ctx.y() - detailHeight, ACCENT_BAR_WIDTH, detailHeight);
+                ctx.stream().addRect(ctx.margin(), ctx.y() - detailTotalHeight, ACCENT_BAR_WIDTH, detailTotalHeight);
                 ctx.stream().fill();
 
-                // Key-value pairs
-                float pairWidth = layout.tableWidth() / detailPerRow;
-                PDType1Font labelFont = PdfPageContext.resolveFont(ts.detailRowLabelStyle().font());
-                PDType1Font valueFont = PdfPageContext.resolveFont(ts.detailRowValueStyle().font());
-                float labelFs = ts.detailRowLabelStyle().font().fontSize();
-                float valueFs = ts.detailRowValueStyle().font().fontSize();
-
+                // Key-value pairs with wrapping
+                float gridRowYOffset = 0f;
                 for (int d = 0; d < detailCols.size(); d++) {
-                    int line = d / detailPerRow;
+                    int gridRow = d / detailPerRow;
                     int pair = d % detailPerRow;
-                    ColumnDef dc = detailCols.get(d);
-                    Object val = row.get(dc.key());
-                    String label = dc.label() + ": ";
-                    String value = FormatUtil.format(val, dc, curr, datePat);
-                    Color valColor = (FormatUtil.shouldRedIfNegative(dc.type()) && FormatUtil.isNegative(val))
-                            ? RED : ts.detailRowValueStyle().font().color();
+
+                    // Advance Y offset at the start of each new grid row
+                    if (pair == 0 && gridRow > 0) {
+                        gridRowYOffset += gridRowHeights[gridRow - 1];
+                    }
 
                     float labelX = ctx.margin() + ACCENT_BAR_WIDTH + 2f + pair * pairWidth;
-                    float lineY = ctx.y() - (line + 1) * DETAIL_ROW_HEIGHT + 3f;
-                    float labelW = labelFont.getStringWidth(label) / 1000f * labelFs;
+                    float firstLineY = ctx.y() - gridRowYOffset - DETAIL_ROW_HEIGHT + 3f;
 
+                    // Draw label on first line
                     ctx.stream().beginText();
-                    ctx.stream().setFont(labelFont, labelFs);
+                    ctx.stream().setFont(detailLabelFont, detailLabelFs);
                     ctx.stream().setNonStrokingColor(ts.detailRowLabelStyle().font().color());
-                    ctx.stream().newLineAtOffset(labelX, lineY);
-                    ctx.stream().showText(label);
+                    ctx.stream().newLineAtOffset(labelX, firstLineY);
+                    ctx.stream().showText(detailLabels.get(d));
                     ctx.stream().endText();
 
+                    // Draw value lines (may be wrapped across multiple lines)
+                    List<String> lines = detailWrappedLines.get(d);
+                    float labelW = detailLabelWidths.get(d);
                     float availW = pairWidth - labelW - ACCENT_BAR_WIDTH - 6f;
-                    PdfTextHelper.drawText(ctx.stream(), value, valueFont, valueFs,
-                            labelX + labelW, lineY, availW, 0f, Alignment.LEFT, valColor);
+
+                    for (int ln = 0; ln < lines.size(); ln++) {
+                        float lineY = firstLineY - ln * detailLineHeight;
+                        PdfTextHelper.drawText(ctx.stream(), lines.get(ln), detailValueFont, detailValueFs,
+                                labelX + labelW, lineY, availW, 0f, Alignment.LEFT, detailColors.get(d));
+                    }
                 }
 
-                ctx.setY(ctx.y() - detailHeight - DETAIL_GAP);
+                ctx.setY(ctx.y() - detailTotalHeight - DETAIL_GAP);
             }
         }
 

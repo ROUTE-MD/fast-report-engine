@@ -28,6 +28,7 @@ public class ListSectionBuilder {
     private TableStyle tableStyle;
     private float marginTop = 8f;
     private float marginBottom = 8f;
+    private float maxWeight = 0f;
 
     ListSectionBuilder(ReportBuilder parent) {
         this.parent = parent;
@@ -193,6 +194,12 @@ public class ListSectionBuilder {
         return this;
     }
 
+    /** Sets the maximum total weight allowed in the table header. Columns exceeding this budget overflow to detail rows. */
+    public ListSectionBuilder maxWeight(float mw) {
+        this.maxWeight = mw;
+        return this;
+    }
+
     public ReportBuilder end() {
         return parent.addSection(ListSection.builder()
                 .sectionTitle(sectionTitle)
@@ -204,6 +211,7 @@ public class ListSectionBuilder {
                 .tableStyle(tableStyle)
                 .marginTop(marginTop)
                 .marginBottom(marginBottom)
+                .maxWeight(maxWeight)
                 .build());
     }
 }

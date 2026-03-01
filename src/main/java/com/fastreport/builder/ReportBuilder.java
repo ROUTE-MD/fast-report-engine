@@ -30,6 +30,7 @@ public class ReportBuilder {
     private byte[] logo;
     private float logoWidth = 80f;
     private float logoHeight = 40f;
+    private float titleMarginTop = 0f;
     private final List<ReportSection> sections = new ArrayList<>();
     private LinkedHashMap<String, String> metaBuffer = new LinkedHashMap<>();
 
@@ -45,6 +46,12 @@ public class ReportBuilder {
 
     public ReportBuilder titleCenter() {
         this.titleAlignment = Alignment.CENTER;
+        return this;
+    }
+
+    /** Adds extra vertical space before the title (e.g. gap between logo and title). */
+    public ReportBuilder titleMarginTop(float points) {
+        this.titleMarginTop = points;
         return this;
     }
 
@@ -150,6 +157,7 @@ public class ReportBuilder {
                 .logo(logo)
                 .logoWidth(logoWidth)
                 .logoHeight(logoHeight)
+                .titleMarginTop(titleMarginTop)
                 .metadata(new LinkedHashMap<>())
                 .sections(List.copyOf(sections))
                 .build();
