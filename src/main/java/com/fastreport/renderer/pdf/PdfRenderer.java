@@ -14,7 +14,6 @@ import java.io.OutputStream;
 /** Main PDF orchestrator: renders a ReportDefinition to PDF via PDFBox. */
 public class PdfRenderer implements ReportRenderer {
 
-    private static final float SEPARATOR_LINE_WIDTH = 1.5f;
     private static final java.awt.Color SEPARATOR_COLOR = new java.awt.Color(52, 152, 219);
 
     private final PdfFullWidthRowRenderer fullWidthRenderer = new PdfFullWidthRowRenderer();
@@ -33,8 +32,9 @@ public class PdfRenderer implements ReportRenderer {
             FontStyle titleFs = report.getTheme().titleStyle();
             PDType1Font titleFont = PdfPageContext.resolveFont(titleFs);
             ctx.moveY(-titleFs.fontSize());
+            Alignment titleAlign = report.getTitleAlignment() != null ? report.getTitleAlignment() : Alignment.LEFT;
             PdfTextHelper.drawText(ctx.stream(), report.getTitle(), titleFont, titleFs.fontSize(),
-                    ctx.margin(), ctx.y(), ctx.usableWidth(), 0f, Alignment.LEFT, titleFs.color());
+                    ctx.margin(), ctx.y(), ctx.usableWidth(), 0f, titleAlign, titleFs.color());
             ctx.moveY(-4f);
 
             // Metadata
@@ -65,14 +65,6 @@ public class PdfRenderer implements ReportRenderer {
                 }
                 ctx.moveY(-6f);
             }
-
-            // Separator line
-            ctx.stream().setStrokingColor(SEPARATOR_COLOR);
-            ctx.stream().setLineWidth(SEPARATOR_LINE_WIDTH);
-            ctx.stream().moveTo(ctx.margin(), ctx.y());
-            ctx.stream().lineTo(ctx.margin() + ctx.usableWidth(), ctx.y());
-            ctx.stream().stroke();
-            ctx.moveY(-8f);
 
             // Sections
             if (report.getSections() != null) {

@@ -2,6 +2,7 @@ package com.fastreport.renderer.xlsx;
 
 import com.fastreport.model.ReportDefinition;
 import com.fastreport.model.section.*;
+import com.fastreport.model.style.Alignment;
 import com.fastreport.model.style.FontStyle;
 import com.fastreport.renderer.ReportRenderer;
 import org.dhatim.fastexcel.BorderSide;
@@ -28,8 +29,14 @@ public class XlsxRenderer implements ReportRenderer {
             int titleRow = ctx.nextRow();
             ws.value(titleRow, 0, report.getTitle());
             FontStyle titleFs = report.getTheme().titleStyle();
+            Alignment titleAlign = report.getTitleAlignment() != null ? report.getTitleAlignment() : Alignment.LEFT;
+            String xlsxAlign = switch (titleAlign) {
+                case LEFT -> "left";
+                case CENTER -> "center";
+                case RIGHT -> "right";
+            };
             ws.style(titleRow, 0).bold().fontSize((int) titleFs.fontSize())
-                    .fontColor(colorHex(titleFs.color())).set();
+                    .fontColor(colorHex(titleFs.color())).horizontalAlignment(xlsxAlign).set();
 
             // Metadata
             if (report.getMetadata() != null) {
@@ -44,8 +51,6 @@ public class XlsxRenderer implements ReportRenderer {
                             .fontColor(colorHex(report.getTheme().metadataValueStyle().color())).set();
                 }
             }
-
-            ctx.nextRow(); // blank separator
 
             // Sections
             if (report.getSections() != null) {

@@ -5,6 +5,7 @@ import com.fastreport.model.ReportOrientation;
 import com.fastreport.model.ReportTheme;
 import com.fastreport.model.section.ReportSection;
 import com.fastreport.model.section.SeparatorLine;
+import com.fastreport.model.style.Alignment;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +20,7 @@ import java.util.List;
 public class ReportBuilder {
 
     private String title;
+    private Alignment titleAlignment = Alignment.LEFT;
     private ReportOrientation orientation = ReportOrientation.LANDSCAPE;
     private ReportTheme theme = ReportTheme.defaults();
     private byte[] logo;
@@ -29,6 +31,16 @@ public class ReportBuilder {
 
     public ReportBuilder title(String title) {
         this.title = title;
+        return this;
+    }
+
+    public ReportBuilder titleAlignment(Alignment alignment) {
+        this.titleAlignment = alignment;
+        return this;
+    }
+
+    public ReportBuilder titleCenter() {
+        this.titleAlignment = Alignment.CENTER;
         return this;
     }
 
@@ -111,6 +123,7 @@ public class ReportBuilder {
     public ReportDefinition build() {
         return ReportDefinition.builder()
                 .title(title)
+                .titleAlignment(titleAlignment)
                 .orientation(orientation)
                 .theme(theme)
                 .logo(logo)

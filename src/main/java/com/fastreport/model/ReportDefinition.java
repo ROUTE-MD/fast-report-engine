@@ -1,6 +1,7 @@
 package com.fastreport.model;
 
 import com.fastreport.model.section.ReportSection;
+import com.fastreport.model.style.Alignment;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +15,9 @@ import java.util.List;
 @Builder(toBuilder = true)
 public class ReportDefinition {
     private String title;
+
+    @Builder.Default
+    private Alignment titleAlignment = Alignment.LEFT;
 
     @Builder.Default
     private ReportOrientation orientation = ReportOrientation.LANDSCAPE;

@@ -5,6 +5,7 @@ import com.fastreport.engine.ReportEngine;
 import com.fastreport.model.ReportDefinition;
 import com.fastreport.model.ReportOrientation;
 import com.fastreport.model.column.ColumnType;
+import com.fastreport.model.style.Alignment;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -120,8 +121,11 @@ public class App {
         // 4) Compact 4-col PDF
         var compact = new ReportBuilder()
                 .title("Banca di Asti - Movimenti (Vista Compatta)")
+                .titleAlignment(Alignment.CENTER)
+                .separator()
                 .meta("Periodo", "01/01/2024 - 31/12/2024")
                 .meta("Generato", now);
+
         if (logo != null) compact.logo(logo, 80f, 40f);
         compact.listSection()
                 .title("Movimenti")
