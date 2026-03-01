@@ -71,7 +71,7 @@ public class PdfPageContext {
         stream = new PDPageContentStream(document, page);
         y = pageHeight - MARGIN;
 
-        if (logoImage != null) {
+        if (logoImage != null && pageNumber == 1) {
             stream.drawImage(logoImage, MARGIN, y - report.getLogoHeight(),
                     report.getLogoWidth(), report.getLogoHeight());
             y -= report.getLogoHeight() + 4f;
