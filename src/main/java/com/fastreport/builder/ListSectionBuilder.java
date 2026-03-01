@@ -145,6 +145,20 @@ public class ListSectionBuilder {
         return this;
     }
 
+    /** Adds a full-width inline column — always rendered as a detail row spanning the entire width. */
+    public ListSectionBuilder inlineFullWidthColumn(String key, String label, ColumnType type) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .inline(true).fullWidth(true).build());
+        return this;
+    }
+
+    /** Adds a full-width inline column with custom width weight. */
+    public ListSectionBuilder inlineFullWidthColumn(String key, String label, ColumnType type, float widthWeight) {
+        columns.add(ColumnDef.builder().key(key).label(label).type(type)
+                .widthWeight(widthWeight).inline(true).fullWidth(true).build());
+        return this;
+    }
+
     /** Adds a pre-built column definition. */
     public ListSectionBuilder column(ColumnDef columnDef) {
         columns.add(columnDef);

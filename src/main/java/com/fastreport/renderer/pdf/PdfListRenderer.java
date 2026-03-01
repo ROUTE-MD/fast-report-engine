@@ -101,29 +101,52 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
 
             float mainRowHeight = Math.max(MIN_ROW_HEIGHT, rowLayout.rowHeight());
 
-            // Pre-compute detail wrapping for accurate height calculation
+            // Pre-compute detail grid positions (fullWidth columns get their own row)
             float detailTotalHeight = 0f;
             List<List<String>> detailWrappedLines = null;
             List<Float> detailLabelWidths = null;
             List<String> detailLabels = null;
             List<Color> detailColors = null;
             float[] gridRowHeights = null;
+            int[] detailGridRow = null;
+            int[] detailPairPos = null;
+            int gridRowCount = 0;
 
             if (hasDetail) {
-                int gridRowCount = (int) Math.ceil((double) detailCols.size() / detailPerRow);
+                detailGridRow = new int[detailCols.size()];
+                detailPairPos = new int[detailCols.size()];
+                int curGridRow = 0, curPairPos = 0;
+
+                for (int d = 0; d < detailCols.size(); d++) {
+                    if (detailCols.get(d).fullWidth()) {
+                        if (curPairPos > 0) { curGridRow++; curPairPos = 0; }
+                        detailGridRow[d] = curGridRow;
+                        detailPairPos[d] = 0;
+                        curGridRow++;
+                    } else {
+                        detailGridRow[d] = curGridRow;
+                        detailPairPos[d] = curPairPos;
+                        curPairPos++;
+                        if (curPairPos >= detailPerRow) { curGridRow++; curPairPos = 0; }
+                    }
+                }
+                gridRowCount = curPairPos > 0 ? curGridRow + 1 : curGridRow;
+
                 gridRowHeights = new float[gridRowCount];
                 detailWrappedLines = new ArrayList<>(detailCols.size());
                 detailLabelWidths = new ArrayList<>(detailCols.size());
                 detailLabels = new ArrayList<>(detailCols.size());
                 detailColors = new ArrayList<>(detailCols.size());
 
+                float fullWidth = layout.tableWidth();
                 for (int d = 0; d < detailCols.size(); d++) {
                     ColumnDef dc = detailCols.get(d);
                     Object val = row.get(dc.key());
                     String label = dc.label() + ": ";
                     String value = FormatUtil.format(val, dc, curr, datePat);
                     float labelW = detailLabelFont.getStringWidth(label) / 1000f * detailLabelFs;
-                    float availW = pairWidth - labelW - ACCENT_BAR_WIDTH - 6f;
+                    float colWidth = dc.fullWidth() ? fullWidth : pairWidth;
+                    float availW = colWidth - labelW - ACCENT_BAR_WIDTH - 6f;
 
                     List<String> lines;
                     if (dc.wrapText() && availW > 0) {
@@ -139,9 +162,9 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                             ? RED : ts.detailRowValueStyle().font().color();
                     detailColors.add(valColor);
 
-                    int gridRow = d / detailPerRow;
+                    int gr = detailGridRow[d];
                     float h = Math.max(DETAIL_ROW_HEIGHT, lines.size() * detailLineHeight + 2f);
-                    if (h > gridRowHeights[gridRow]) gridRowHeights[gridRow] = h;
+                    if (h > gridRowHeights[gr]) gridRowHeights[gr] = h;
                 }
 
                 for (float h : gridRowHeights) detailTotalHeight += h;
@@ -226,18 +249,26 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                 ctx.stream().addRect(ctx.margin(), ctx.y() - detailTotalHeight, ACCENT_BAR_WIDTH, detailTotalHeight);
                 ctx.stream().fill();
 
-                // Key-value pairs with wrapping
+                // Key-value pairs with wrapping (respects fullWidth flag)
                 float gridRowYOffset = 0f;
+                int prevGridRow = -1;
                 for (int d = 0; d < detailCols.size(); d++) {
-                    int gridRow = d / detailPerRow;
-                    int pair = d % detailPerRow;
+                    int gr = detailGridRow[d];
+                    int pair = detailPairPos[d];
+                    boolean isFull = detailCols.get(d).fullWidth();
 
-                    // Advance Y offset at the start of each new grid row
-                    if (pair == 0 && gridRow > 0) {
-                        gridRowYOffset += gridRowHeights[gridRow - 1];
+                    // Accumulate Y offset when entering a new grid row
+                    while (prevGridRow < gr - 1) {
+                        prevGridRow++;
+                        gridRowYOffset += gridRowHeights[prevGridRow];
+                    }
+                    if (gr != prevGridRow) {
+                        if (prevGridRow >= 0) gridRowYOffset += gridRowHeights[prevGridRow];
+                        prevGridRow = gr;
                     }
 
-                    float labelX = ctx.margin() + ACCENT_BAR_WIDTH + 2f + pair * pairWidth;
+                    float colWidth = isFull ? layout.tableWidth() : pairWidth;
+                    float labelX = ctx.margin() + ACCENT_BAR_WIDTH + 2f + pair * colWidth;
                     float firstLineY = ctx.y() - gridRowYOffset - DETAIL_ROW_HEIGHT + 3f;
 
                     // Draw label on first line
@@ -251,7 +282,7 @@ public class PdfListRenderer implements PdfSectionRenderer<ListSection> {
                     // Draw value lines (may be wrapped across multiple lines)
                     List<String> lines = detailWrappedLines.get(d);
                     float labelW = detailLabelWidths.get(d);
-                    float availW = pairWidth - labelW - ACCENT_BAR_WIDTH - 6f;
+                    float availW = colWidth - labelW - ACCENT_BAR_WIDTH - 6f;
 
                     for (int ln = 0; ln < lines.size(); ln++) {
                         float lineY = firstLineY - ln * detailLineHeight;
